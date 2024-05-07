@@ -20,7 +20,6 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	int64_t file_len;
 	HANDLE file_handle;
 	file_handle = CreateFileA(
 		argv[2],
@@ -31,22 +30,28 @@ int main(int argc, char** argv) {
 		FILE_ATTRIBUTE_NORMAL,
 		NULL
 	);
-	file_len = GetFileSizeEx(file_handle,
-		(PLARGE_INTEGER) &file_len);
 
 	if (file_handle == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, "Unable to open file!");
 		return -1;
 	}
 
-	HANDLE file_map;
-	file_map = CreateFileMapping(file_handle,
-		NULL, PAGE_READONLY | SEC_IMAGE, 0, 0, NULL);
-	if (file_map == 0) { err_code = -2; goto ERR; }
+	//HANDLE file_map;
+	//file_map = CreateFileMapping(file_handle,
+	//	NULL, PAGE_READONLY | SEC_IMAGE, 0, 0, NULL);
+	//if (file_map == 0) { err_code = -2; goto ERR; }
 
-	void* file_mmap;
-	file_mmap = MapViewOfFile(file_map, FILE_MAP_READ, 0, 0, 0);
-	if (file_mmap == 0) { err_code = -3; goto ERR; }
+	//void* file_view;
+	//file_view = MapViewOfFile(file_map, FILE_MAP_READ, 0, 0, 0);
+	//if (file_view == 0) { err_code = -3; goto ERR; }
+
+	int64_t file_size;
+	char* file_view;
+	size_t bytes_read;
+
+	GetFileSizeEx(file_handle, &file_size);
+	file_view = calloc(1, file_size);
+	ReadFile(file_handle, file_view, file_size, &bytes_read, 0);
 
 	TOKEN_PRIVILEGES priv;
 	HANDLE token;
@@ -66,16 +71,9 @@ int main(int argc, char** argv) {
 	HANDLE proc_handle;
 	proc_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 	
-	int res;
-	res = map(proc_handle, file_len, file_mmap);
-	switch (res) {
-		/* do stuff */
-	}
+	printf("Mapping...\n");
 
+	return map(proc_handle, file_view);
 ERR:
-	switch (err_code) {
-		/* do stuff */
-	}
-	CloseHandle(file_handle);
-	return -1;
+	return err_code;
 }
