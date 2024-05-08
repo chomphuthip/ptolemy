@@ -29,4 +29,4 @@ struct mapping_params
 
 int map(HANDLE proc_handle, char* file_view);
 
-void _stdcall loader_fn(struct mapping_params* params);
+DWORD WINAPI loader_fn(struct mapping_params* params);

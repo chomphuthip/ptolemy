@@ -36,22 +36,14 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	//HANDLE file_map;
-	//file_map = CreateFileMapping(file_handle,
-	//	NULL, PAGE_READONLY | SEC_IMAGE, 0, 0, NULL);
-	//if (file_map == 0) { err_code = -2; goto ERR; }
+	HANDLE file_map;
+	file_map = CreateFileMapping(file_handle,
+		NULL, PAGE_READONLY , 0, 0, NULL);
+	if (file_map == 0) { err_code = -2; goto ERR; }
 
-	//void* file_view;
-	//file_view = MapViewOfFile(file_map, FILE_MAP_READ, 0, 0, 0);
-	//if (file_view == 0) { err_code = -3; goto ERR; }
-
-	int64_t file_size;
-	char* file_view;
-	size_t bytes_read;
-
-	GetFileSizeEx(file_handle, &file_size);
-	file_view = calloc(1, file_size);
-	ReadFile(file_handle, file_view, file_size, &bytes_read, 0);
+	void* file_view;
+	file_view = MapViewOfFile(file_map, FILE_MAP_READ, 0, 0, 0);
+	if (file_view == 0) { err_code = -3; goto ERR; }
 
 	TOKEN_PRIVILEGES priv;
 	HANDLE token;

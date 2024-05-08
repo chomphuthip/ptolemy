@@ -33,6 +33,12 @@ int map(HANDLE proc_handle, char* file_view) {
 			section_header->SizeOfRawData,
 			(void*)0);
 
+		printf("Wrote %d bytes of %s section at %p\n",
+			section_header->SizeOfRawData,
+			section_header->Name,
+			base_remote + section_header->VirtualAddress
+		);
+
 		section_header++;
 	}
 
@@ -63,7 +69,7 @@ int map(HANDLE proc_handle, char* file_view) {
 	return 0;
 }
 
-void _stdcall loader_fn(struct mapping_params* params) {
+DWORD WINAPI loader_fn(struct mapping_params* params) {
 	char* base;
 	f_LoadLibraryA _LoadLibraryA;
 	f_GetProcAddress _GetProcAddress;
@@ -124,7 +130,7 @@ void _stdcall loader_fn(struct mapping_params* params) {
 
 	import_dir_entry = &dd[IMAGE_DIRECTORY_ENTRY_IMPORT];
 	import_descriptor = base + import_dir_entry->VirtualAddress;
-	
+
 	while (import_descriptor->Name) {
 		char* lib_name;
 		lib_name = base + import_descriptor->Name;
@@ -136,7 +142,7 @@ void _stdcall loader_fn(struct mapping_params* params) {
 		uint64_t* func_ref;
 		
 		thunk_ref = base + import_descriptor->OriginalFirstThunk;
-		func_ref = base + import_descriptor->OriginalFirstThunk;
+		func_ref = base + import_descriptor->FirstThunk;
 		if (!thunk_ref) thunk_ref = func_ref;
 
 		for (; *thunk_ref; thunk_ref++, func_ref++) {
@@ -146,7 +152,7 @@ void _stdcall loader_fn(struct mapping_params* params) {
 			else
 				*func_ref = _GetProcAddress(dll_handle,
 					((IMAGE_IMPORT_BY_NAME*)
-						(base + *thunk_ref))->Name);
+						(base + (*thunk_ref)))->Name);
 		}
 
 		import_descriptor++;
@@ -178,8 +184,8 @@ void _stdcall loader_fn(struct mapping_params* params) {
 
 	f_DLL_ENTRY_POINT _entry;
 	_entry = base + opt_h->AddressOfEntryPoint;
-	
-	__debugbreak();
 
 	_entry(base, DLL_PROCESS_ATTACH, (void*)0);
+
+	return 0;
 }
